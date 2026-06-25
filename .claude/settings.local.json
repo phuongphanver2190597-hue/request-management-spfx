@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell(gulp --version 2>$null)",
+      "PowerShell(yo --version 2>$null; \\(Get-Command yo -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(nvm list 2>$null; \\(Get-Command nvm -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(npm show @microsoft/generator-sharepoint version 2>$null)",
+      "PowerShell(npm show @microsoft/sp-webpart-base version 2>$null)",
+      "PowerShell(npm show @microsoft/sp-webpart-base@1.23.1 engines 2>$null)",
+      "PowerShell(npm show @microsoft/sp-build-web@1.23.1 dependencies --json 2>$null)",
+      "PowerShell(npm show @microsoft/rush-stack-compiler-4.9 version 2>$null)",
+      "PowerShell(winget --version 2>$null)",
+      "PowerShell(fnm --version 2>$null)",
+      "PowerShell(npm show @microsoft/gulp-core-build-typescript@8.6.3 peerDependencies --json 2>$null)",
+      "PowerShell(npm show @microsoft/rush-stack-compiler-5.0 version 2>$null)",
+      "PowerShell(npm show @microsoft/rush-stack-compiler-5.1 version 2>$null)",
+      "PowerShell(npm show @microsoft/sp-build-web@1.23.1 --json 2>$null)",
+      "PowerShell(npm show @microsoft/generator-sharepoint@1.23.1 --json 2>$null)",
+      "PowerShell(npm show @microsoft/spfx-heft-plugins@1.23.1 dependencies --json 2>$null | ConvertFrom-Json | ForEach-Object { $_.PSObject.Properties | Select-Object Name, Value })",
+      "PowerShell(npm install -g gulp-cli yo @microsoft/generator-sharepoint --ignore-engines 2>&1)",
+      "PowerShell($generatorPath = \\(npm root -g\\) + \"\\\\@microsoft\\\\generator-sharepoint\"; Get-ChildItem \"$generatorPath\\\\generators\\\\app\\\\templates\" -ErrorAction SilentlyContinue | Select-Object -First 20)",
+      "PowerShell($root = npm root -g; Get-ChildItem \"$root\\\\@microsoft\\\\generator-sharepoint\" -Recurse -Filter \"package.json.text\" -ErrorAction SilentlyContinue | Select-Object -First 5 | ForEach-Object { $_.FullName })",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\"; Get-ChildItem \"$genDir\\\\lib\" -ErrorAction SilentlyContinue | Select-Object -First 20)",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\"; Get-ChildItem \"$genDir\" -Recurse | Select-Object -First 30 | ForEach-Object { $_.FullName })",
+      "PowerShell($root = npm root -g; $templateDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\solution\\\\templates\\\\base\"; Get-ChildItem \"$templateDir\" -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })",
+      "PowerShell($root = npm root -g; $templateDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\solution\\\\templates\\\\base\"; Get-Content \"$templateDir\\\\gulpfile.js\")",
+      "PowerShell($root = npm root -g; $templateDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\solution\\\\templates\\\\base\\\\config\"; Get-ChildItem \"$templateDir\" | ForEach-Object { $_.Name })",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\"; $solDir = \"$genDir\\\\solution\"; Get-ChildItem \"$solDir\" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 30 | ForEach-Object { $_.FullName.Replace\\($solDir, ''\\) })",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\solution\"; Get-Content \"$genDir\\\\initial.package.json\")",
+      "PowerShell($root = npm root -g; Get-Content \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\solution\\\\templates\\\\spo\\\\tsconfig.json\")",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\webpart\"; Get-ChildItem \"$genDir\" -Recurse | ForEach-Object { $_.FullName.Replace\\($genDir, ''\\) })",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\webpart\\\\templates\\\\react\"; Get-Content \"$genDir\\\\{componentClassName}.ts\"; Write-Host \"---PROPS---\"; Get-Content \"$genDir\\\\components\\\\I{componentName}Props.ts\"; Write-Host \"---TSX---\"; Get-Content \"$genDir\\\\components\\\\{componentName}.tsx\")",
+      "PowerShell($root = npm root -g; $genDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\generators\\\\solution\\\\index.js\"; Select-String -Path $genDir -Pattern \"rush-stack|typescript|react|fluentui|@fluentui\" | Select-Object -First 30 | ForEach-Object { $_.Line.Trim\\(\\) })",
+      "PowerShell($root = npm root -g; $depDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\common\\\\dependency\"; Get-ChildItem \"$depDir\" | ForEach-Object { $_.Name })",
+      "PowerShell($root = npm root -g; $depDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\common\\\\dependency\"; Get-Content \"$depDir\\\\react.json\"; Write-Host \"---WEBPART---\"; Get-ChildItem \"$depDir\\\\webpart\" | ForEach-Object { $_.Name })",
+      "PowerShell($root = npm root -g; $depDir = \"$root\\\\@microsoft\\\\generator-sharepoint\\\\lib\\\\common\\\\dependency\"; Get-Content \"$depDir\\\\webpart\\\\firstParty.json\")"
+    ]
+  }
+}

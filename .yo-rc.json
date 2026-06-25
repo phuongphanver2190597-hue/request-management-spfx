@@ -1,0 +1,17 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.14.0",
+    "sdkVersions": {},
+    "version": "1.23.1",
+    "libraryName": "request-management",
+    "libraryId": "a7c1b3f4-2d8e-4a56-9b7c-3f1e8d2a9b0c",
+    "environment": "spo",
+    "packageManager": "npm",
+    "isDomainIsolated": false,
+    "isCreatingExtension": false,
+    "skipFeatureDeployment": false,
+    "isES6": true
+  }
+}

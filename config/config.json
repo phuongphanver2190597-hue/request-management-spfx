@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/core-build/config.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "request-management-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/requestManagement/RequestManagementWebPart.js",
+          "manifest": "./src/webparts/requestManagement/RequestManagementWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {}
+}

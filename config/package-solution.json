@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "request-management-client-side-solution",
+    "id": "a7c1b3f4-2d8e-4a56-9b7c-3f1e8d2a9b0c",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "websiteUrl": "",
+      "mpnId": "Undefined-1.23.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Request Management Web Part"
+      },
+      "longDescription": {
+        "default": "A custom web part for managing requests in SharePoint Online"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "Request Management Feature",
+        "description": "Request Management Web Part",
+        "id": "c3f2a8b1-9e4d-4c7a-b5f1-8d3e6a2c0b9f",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/request-management.sppkg"
+  }
+}

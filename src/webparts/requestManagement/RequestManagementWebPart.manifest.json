@@ -1,0 +1,23 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "b9d2e5f1-3c7a-4b8d-a6e1-2f9c4d7b1e3a",
+  "alias": "RequestManagementWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart"],
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+      "group": { "default": "Other" },
+      "title": { "default": "Request Management" },
+      "description": { "default": "Request Management Web Part for SharePoint Online" },
+      "officeFabricIconFontName": "Page",
+      "properties": {
+        "listName": "Requests"
+      }
+    }
+  ]
+}

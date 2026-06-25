@@ -1,0 +1,4 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/core-build/copy-assets.schema.json",
+  "deployCdnPath": "temp/deploy"
+}
