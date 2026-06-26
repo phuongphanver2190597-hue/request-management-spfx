@@ -5,3 +5,11 @@ temp
 .yo-resolve
 *.sppkg
 .DS_Store
+
+# Build artifacts
+sharepoint/solution/debug/
+release/assets/
+release/component-dependency-audit/
+
+# Claude settings
+.claude/

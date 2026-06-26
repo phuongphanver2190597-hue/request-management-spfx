@@ -9,6 +9,14 @@
           "manifest": "./src/webparts/requestManagement/RequestManagementWebPart.manifest.json"
         }
       ]
+    },
+    "vehicle-booking-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/vehicleBooking/VehicleBookingWebPart.js",
+          "manifest": "./src/webparts/vehicleBooking/VehicleBookingWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {}

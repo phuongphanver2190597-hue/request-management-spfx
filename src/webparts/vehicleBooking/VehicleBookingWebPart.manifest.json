@@ -1,0 +1,23 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "c4e7f2a1-8b3d-4e9f-a5c2-1d6b8e3f0c7a",
+  "alias": "VehicleBookingWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart"],
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+      "group": { "default": "Other" },
+      "title": { "default": "Vehicle Booking System" },
+      "description": { "default": "Vehicle Booking Request Management System" },
+      "officeFabricIconFontName": "Car",
+      "properties": {
+        "description": "Vehicle Booking System"
+      }
+    }
+  ]
+}
