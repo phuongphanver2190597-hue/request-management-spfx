@@ -60,9 +60,9 @@ export default class VehicleBookingWebPart extends BaseClientSideWebPart<IVehicl
               groupName: 'Chatbot (Claude AI)',
               groupFields: [
                 PropertyPaneTextField('claudeApiKey', {
-                  label: 'Claude API Key',
-                  placeholder: 'sk-ant-...',
-                  description: 'Lấy tại console.anthropic.com — để trống để tắt chatbot',
+                  label: 'AI Chatbot API Key',
+                  placeholder: 'sk-ant-... (Claude) hoặc sk-... (OpenAI)',
+                  description: 'Claude: console.anthropic.com | OpenAI: platform.openai.com — để trống để tắt chatbot',
                 }),
               ],
             },

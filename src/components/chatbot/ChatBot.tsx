@@ -60,9 +60,61 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
     }
   }
 
+  private _isOpenAI(): boolean {
+    const key = this.props.apiKey;
+    return key.startsWith('sk-') && !key.startsWith('sk-ant-');
+  }
+
+  private async _callClaude(messages: IMessage[]): Promise<string> {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': this.props.apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: { message?: string } }).error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json() as { content: { text: string }[] };
+    return data.content?.[0]?.text || '(Không có phản hồi)';
+  }
+
+  private async _callOpenAI(messages: IMessage[]): Promise<string> {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.props.apiKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: { message?: string } }).error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json() as { choices: { message: { content: string } }[] };
+    return data.choices?.[0]?.message?.content || '(Không có phản hồi)';
+  }
+
   private async _send(): Promise<void> {
     const { input, messages } = this.state;
-    const { apiKey } = this.props;
     const text = input.trim();
     if (!text || this.state.loading) return;
 
@@ -70,29 +122,10 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
     this.setState({ messages: newMessages, input: '', loading: true, error: null });
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
-          system: SYSTEM_PROMPT,
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      });
+      const reply = this._isOpenAI()
+        ? await this._callOpenAI(newMessages)
+        : await this._callClaude(newMessages);
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: { message?: string } }).error?.message || `HTTP ${res.status}`);
-      }
-
-      const data = await res.json() as { content: { text: string }[] };
-      const reply = data.content?.[0]?.text || '(Không có phản hồi)';
       this.setState({
         messages: [...newMessages, { role: 'assistant', content: reply }],
         loading: false,
