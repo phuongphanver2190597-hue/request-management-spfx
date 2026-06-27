@@ -68,7 +68,9 @@ Khi người dùng muốn TẠO yêu cầu đặt xe:
 QUAN TRỌNG - phân biệt rõ 2 loại:
 - "yêu cầu của tôi" / "tôi đã tạo" → dùng get_my_requests (yêu cầu DO TÔI TẠO)
 - "chờ tôi duyệt" / "cần tôi phê duyệt" / "chờ phê duyệt" → dùng get_pending_approvals (yêu cầu của NGƯỜI KHÁC gửi lên cho tôi duyệt)
-Khi người dùng muốn xem chi tiết một ticket, hãy dùng tool navigate_to_request.`;
+Khi người dùng muốn xem / mở chi tiết một ticket:
+- Nếu có mã VBR (VBR-YYYY-NNNNN) → dùng open_request_by_code
+- Nếu có ID số → dùng navigate_to_request`;
 
 // Tool definitions — dùng chung cho cả Claude và OpenAI
 const TOOLS_SCHEMA = [
@@ -95,13 +97,24 @@ const TOOLS_SCHEMA = [
   },
   {
     name: 'navigate_to_request',
-    description: 'Mở màn hình chi tiết của một yêu cầu trong app.',
+    description: 'Mở màn hình chi tiết của một yêu cầu theo ID số.',
     parameters: {
       type: 'object',
       properties: {
         request_id: { type: 'number', description: 'ID số của yêu cầu (không phải mã VBR)' },
       },
       required: ['request_id'],
+    },
+  },
+  {
+    name: 'open_request_by_code',
+    description: 'Mở màn hình chi tiết theo MÃ VBR (ví dụ VBR-2026-70280). Dùng khi người dùng nhắc đến mã VBR. Tìm trong cả yêu cầu của tôi lẫn yêu cầu chờ tôi duyệt.',
+    parameters: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', description: 'Mã yêu cầu dạng VBR-YYYY-NNNNN' },
+      },
+      required: ['code'],
     },
   },
   {
@@ -169,10 +182,15 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
       }
 
       if (name === 'get_request_by_code') {
-        const all = await this.bookingSvc.getMyRequests(userEmail);
-        const r = all.find(x => x.RequestCode?.toLowerCase() === String(args.code).toLowerCase());
-        if (!r) return `Không tìm thấy yêu cầu ${args.code}.`;
-        return `Mã: ${r.RequestCode}\nTrạng thái: ${r.Status}\nĐiểm đón: ${r.PickupLocation}\nĐiểm đến: ${r.DropoffLocation}\nThời gian: ${r.PickupDateTime}\nMục đích: ${r.Purpose}\nID: ${r.ID}`;
+        const [mine, pending] = await Promise.all([
+          this.bookingSvc.getMyRequests(userEmail),
+          this.bookingSvc.getPendingApproval(userEmail),
+        ]);
+        const all = [...mine, ...pending];
+        const code = String(args.code).toLowerCase().trim();
+        const r = all.find(x => x.RequestCode?.toLowerCase() === code);
+        if (!r) return `Không tìm thấy yêu cầu ${args.code} trong danh sách của bạn.`;
+        return `Mã: ${r.RequestCode}\nNgười yêu cầu: ${r.RequesterName}\nTrạng thái: ${r.Status}\nĐiểm đón: ${r.PickupLocation}\nĐiểm đến: ${r.DropoffLocation}\nThời gian đón: ${r.PickupDateTime}\nMục đích: ${r.Purpose}\nID: ${r.ID}`;
       }
 
       if (name === 'get_pending_approvals') {
@@ -187,6 +205,18 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
         const id = Number(args.request_id);
         onNavigate('request-detail', { id });
         return `Đã mở ticket ID ${id}.`;
+      }
+
+      if (name === 'open_request_by_code') {
+        const [mine, pending] = await Promise.all([
+          this.bookingSvc.getMyRequests(userEmail),
+          this.bookingSvc.getPendingApproval(userEmail),
+        ]);
+        const code = String(args.code).toLowerCase().trim();
+        const r = [...mine, ...pending].find(x => x.RequestCode?.toLowerCase() === code);
+        if (!r) return `Không tìm thấy yêu cầu ${args.code}.`;
+        onNavigate('request-detail', { id: r.ID });
+        return `Đã mở ticket ${r.RequestCode} (ID: ${r.ID}).`;
       }
 
       if (name === 'create_booking_request') {
