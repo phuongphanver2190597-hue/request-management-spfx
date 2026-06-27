@@ -85,8 +85,8 @@ const TOOLS_SCHEMA = [
     },
   },
   {
-    name: 'get_request_by_code',
-    description: 'Tìm chi tiết một yêu cầu theo mã VBR (ví dụ VBR-2026-12345).',
+    name: 'open_request_by_code',
+    description: 'Xem chi tiết hoặc mở một yêu cầu theo MÃ VBR. LUÔN dùng tool này khi người dùng nhắc đến mã VBR (ví dụ VBR-2026-70280, detail VBR-xxx, chi tiết VBR-xxx, mở VBR-xxx). Tìm trong cả yêu cầu của tôi lẫn yêu cầu chờ tôi duyệt.',
     parameters: {
       type: 'object',
       properties: {
@@ -97,24 +97,13 @@ const TOOLS_SCHEMA = [
   },
   {
     name: 'navigate_to_request',
-    description: 'Mở màn hình chi tiết của một yêu cầu theo ID số.',
+    description: 'Mở màn hình chi tiết theo ID số (chỉ dùng khi có ID số, KHÔNG phải mã VBR).',
     parameters: {
       type: 'object',
       properties: {
-        request_id: { type: 'number', description: 'ID số của yêu cầu (không phải mã VBR)' },
+        request_id: { type: 'number', description: 'ID số của yêu cầu' },
       },
       required: ['request_id'],
-    },
-  },
-  {
-    name: 'open_request_by_code',
-    description: 'Mở màn hình chi tiết theo MÃ VBR (ví dụ VBR-2026-70280). Dùng khi người dùng nhắc đến mã VBR. Tìm trong cả yêu cầu của tôi lẫn yêu cầu chờ tôi duyệt.',
-    parameters: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', description: 'Mã yêu cầu dạng VBR-YYYY-NNNNN' },
-      },
-      required: ['code'],
     },
   },
   {
@@ -181,17 +170,7 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
         ).join('\n');
       }
 
-      if (name === 'get_request_by_code') {
-        const [mine, pending] = await Promise.all([
-          this.bookingSvc.getMyRequests(userEmail),
-          this.bookingSvc.getPendingApproval(userEmail),
-        ]);
-        const all = [...mine, ...pending];
-        const code = String(args.code).toLowerCase().trim();
-        const r = all.find(x => x.RequestCode?.toLowerCase() === code);
-        if (!r) return `Không tìm thấy yêu cầu ${args.code} trong danh sách của bạn.`;
-        return `Mã: ${r.RequestCode}\nNgười yêu cầu: ${r.RequesterName}\nTrạng thái: ${r.Status}\nĐiểm đón: ${r.PickupLocation}\nĐiểm đến: ${r.DropoffLocation}\nThời gian đón: ${r.PickupDateTime}\nMục đích: ${r.Purpose}\nID: ${r.ID}`;
-      }
+
 
       if (name === 'get_pending_approvals') {
         const list = await this.bookingSvc.getPendingApproval(userEmail);
