@@ -20,6 +20,8 @@ import { ROLE } from '../../../common/constants/roles';
 import { extractErrorMessage } from '../../../common/helpers/errorHelper';
 import ChatBot from '../../../components/chatbot/ChatBot';
 
+declare global { interface Window { __vbChatBotLoaded?: boolean; } }
+
 // Bật DEV_MODE để hiện switcher giả lập user — tắt trước khi release
 const DEV_MODE = true;
 
@@ -243,6 +245,7 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
             {this._renderScreen()}
           </AppLayout>
         </div>
+        {claudeApiKey && (() => { window.__vbChatBotLoaded = true; return null; })()}
         {claudeApiKey && (
           <ChatBot
             apiKey={claudeApiKey}

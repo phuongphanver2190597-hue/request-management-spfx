@@ -1,0 +1,24 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/core-build/entry.schema.json",
+  "id": "e2a4c6f8-1b3d-4e7a-9c5f-2d8b0e6a4c2f",
+  "alias": "ChatBotApplicationCustomizer",
+  "componentType": "Extension",
+  "extensionType": "ApplicationCustomizer",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "safeWithCustomScriptDisabled": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119a-3b0a-4e4e-b8d1-c5f001a40fe0",
+      "group": { "default": "Custom" },
+      "title": { "default": "AI Chatbot" },
+      "description": { "default": "Global AI Chatbot powered by Claude/GPT" },
+      "officeFabricIconFontName": "Robot",
+      "properties": {
+        "claudeApiKey": "",
+        "bookingPageUrl": ""
+      }
+    }
+  ]
+}
