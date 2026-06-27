@@ -18,7 +18,6 @@ import { validateBookingRequest, getFieldError, IValidationError } from '../../c
 import { fromInputDateTimeLocal, toInputDateTimeLocal } from '../../common/helpers/dateHelper';
 import { extractErrorMessage } from '../../common/helpers/errorHelper';
 import { PageHeader } from '../shared/PageHeader';
-import { EmailService } from '../../services/emailService';
 
 const WHITE = '#FFFFFF';
 const BORDER = '#E1E4E8';
@@ -120,7 +119,6 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
   private bookingSvc: VehicleBookingRequestService;
   private locationSvc: LocationMasterService;
   private userSvc: UserRoleService;
-  private emailSvc: EmailService;
   private _mql: MediaQueryList | null = null;
 
   constructor(props: ICreateRequestFormProps) {
@@ -142,7 +140,6 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
     this.bookingSvc = new VehicleBookingRequestService(props.context);
     this.locationSvc = new LocationMasterService(props.context);
     this.userSvc = new UserRoleService(props.context);
-    this.emailSvc = new EmailService(props.context);
   }
 
   public componentDidMount(): void {
@@ -279,18 +276,6 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
       await this.bookingSvc.submitRequest(created.ID, created, {
         id: user.userId, name: user.userName, email: user.userEmail,
       }, managerEmail || user.userEmail);
-
-      // Gửi email thông báo cho approver
-      const manager = this.state.allManagers.find(m => m.UserEmail === managerEmail);
-      this.emailSvc.sendApprovalRequest({
-        toEmail:       managerEmail || user.userEmail,
-        toName:        manager?.UserName || managerEmail,
-        requestId:     created.ID,
-        requestCode:   created.RequestCode,
-        requestTitle:  created.Purpose || created.Title,
-        requesterName: user.userName,
-        pageUrl:       window.location.href.split('?')[0],
-      }).catch(err => console.warn('[EmailService] Không gửi được email:', extractErrorMessage(err)));
 
       this.setState({ isSubmitting: false });
       this.props.onNavigate('my-requests');

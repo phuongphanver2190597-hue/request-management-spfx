@@ -11,7 +11,6 @@ import { VehicleBookingHistoryService } from '../../services/vehicleBookingHisto
 import { VehicleBookingCommentService } from '../../services/vehicleBookingCommentService';
 import { UserRoleService } from '../../services/userRoleService';
 import { IUserRole } from '../../models/UserRole';
-import { EmailService } from '../../services/emailService';
 import { IVehicleBookingRequest } from '../../models/VehicleBookingRequest';
 import { IVehicleBookingHistory } from '../../models/VehicleBookingHistory';
 import { IVehicleBookingComment } from '../../models/VehicleBookingComment';
@@ -84,7 +83,6 @@ interface IRequestDetailState {
   isSubmitDialogOpen: boolean;
   submitManagerEmail: string;
   managers: IUserRole[];
-  emailWarning: string | null;
 }
 
 export default class RequestDetail extends React.Component<IRequestDetailProps, IRequestDetailState> {
@@ -92,7 +90,6 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
   private historySvc: VehicleBookingHistoryService;
   private commentSvc: VehicleBookingCommentService;
   private userSvc: UserRoleService;
-  private emailSvc: EmailService;
   private _mql: MediaQueryList | null = null;
 
   constructor(props: IRequestDetailProps) {
@@ -102,13 +99,12 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
       isLoading: false, error: null,
       actionNote: '', commentText: '', isActioning: false, confirmAction: null,
       isMobile: typeof window !== 'undefined' && window.innerWidth <= 768,
-      isSubmitDialogOpen: false, submitManagerEmail: '', managers: [], emailWarning: null,
+      isSubmitDialogOpen: false, submitManagerEmail: '', managers: [],
     };
     this.bookingSvc = new VehicleBookingRequestService(props.context);
     this.historySvc = new VehicleBookingHistoryService(props.context);
     this.commentSvc = new VehicleBookingCommentService(props.context);
     this.userSvc = new UserRoleService(props.context);
-    this.emailSvc = new EmailService(props.context);
   }
 
   public componentDidMount(): void {
@@ -182,30 +178,11 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
   }
 
   private async _doSubmit(): Promise<void> {
-    const { request, submitManagerEmail, managers } = this.state;
+    const { request, submitManagerEmail } = this.state;
     if (!request || !submitManagerEmail) return;
     this.setState({ isActioning: true, isSubmitDialogOpen: false, error: null });
     try {
       await this.bookingSvc.submitRequest(request.ID, request, this._user(), submitManagerEmail);
-
-      // Gửi email — không block submit nếu lỗi, nhưng hiện cảnh báo
-      const manager = managers.find(m => m.UserEmail === submitManagerEmail);
-      try {
-        await this.emailSvc.sendApprovalRequest({
-          toEmail:       submitManagerEmail,
-          toName:        manager?.UserName || submitManagerEmail,
-          requestId:     request.ID,
-          requestCode:   request.RequestCode,
-          requestTitle:  request.Title || request.Purpose,
-          requesterName: request.RequesterName,
-          pageUrl:       window.location.href.split('?')[0],
-        });
-      } catch (emailErr) {
-        const msg = extractErrorMessage(emailErr);
-        console.error('[EmailService] Gửi email thất bại:', msg, emailErr);
-        this.setState({ emailWarning: `Yêu cầu đã gửi thành công, nhưng không gửi được email thông báo: ${msg}` });
-      }
-
       this.setState({ isActioning: false });
       await this._load();
     } catch (err) {
@@ -292,19 +269,11 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
   }
 
   public render(): React.ReactElement {
-    const { request, history, comments, isLoading, error, confirmAction, actionNote, commentText, isActioning, isMobile, emailWarning } = this.state;
+    const { request, history, comments, isLoading, error, confirmAction, actionNote, commentText, isActioning, isMobile } = this.state;
 
     if (isLoading) return <Spinner size={SpinnerSize.large} label="Đang tải..." styles={{ root: { padding: '80px 0' } }} />;
     if (error) return <MessageBar messageBarType={MessageBarType.error}>{error}</MessageBar>;
     if (!request) return <MessageBar>Không tìm thấy yêu cầu</MessageBar>;
-
-    const emailWarningBar = emailWarning ? (
-      <MessageBar messageBarType={MessageBarType.warning}
-        onDismiss={() => this.setState({ emailWarning: null })}
-        styles={{ root: { marginBottom: 12, borderRadius: 8 } }}>
-        {emailWarning}
-      </MessageBar>
-    ) : null;
 
     const rightPanel = (
       <div>
@@ -352,7 +321,6 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
 
     return (
       <div>
-        {emailWarningBar}
         <PageHeader icon="DocumentSet" title={request.RequestCode} subtitle="Chi tiết yêu cầu đặt xe" />
 
         <div className={isMobile ? styles.layoutMobile : styles.layout}>
