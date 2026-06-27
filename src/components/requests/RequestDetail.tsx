@@ -2,13 +2,16 @@ import * as React from 'react';
 import {
   Spinner, SpinnerSize, MessageBar, MessageBarType,
   PrimaryButton, DefaultButton, TextField, mergeStyleSets,
-  Dialog, DialogType, DialogFooter,
+  Dialog, DialogType, DialogFooter, Dropdown, IDropdownOption,
 } from '@fluentui/react';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { IAppUser, AppScreen } from '../../common/types/common';
 import { VehicleBookingRequestService } from '../../services/vehicleBookingRequestService';
 import { VehicleBookingHistoryService } from '../../services/vehicleBookingHistoryService';
 import { VehicleBookingCommentService } from '../../services/vehicleBookingCommentService';
+import { UserRoleService } from '../../services/userRoleService';
+import { IUserRole } from '../../models/UserRole';
+import { EmailService } from '../../services/emailService';
 import { IVehicleBookingRequest } from '../../models/VehicleBookingRequest';
 import { IVehicleBookingHistory } from '../../models/VehicleBookingHistory';
 import { IVehicleBookingComment } from '../../models/VehicleBookingComment';
@@ -78,12 +81,18 @@ interface IRequestDetailState {
   isActioning: boolean;
   confirmAction: string | null;
   isMobile: boolean;
+  isSubmitDialogOpen: boolean;
+  submitManagerEmail: string;
+  managers: IUserRole[];
+  emailWarning: string | null;
 }
 
 export default class RequestDetail extends React.Component<IRequestDetailProps, IRequestDetailState> {
   private bookingSvc: VehicleBookingRequestService;
   private historySvc: VehicleBookingHistoryService;
   private commentSvc: VehicleBookingCommentService;
+  private userSvc: UserRoleService;
+  private emailSvc: EmailService;
   private _mql: MediaQueryList | null = null;
 
   constructor(props: IRequestDetailProps) {
@@ -93,10 +102,13 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
       isLoading: false, error: null,
       actionNote: '', commentText: '', isActioning: false, confirmAction: null,
       isMobile: typeof window !== 'undefined' && window.innerWidth <= 768,
+      isSubmitDialogOpen: false, submitManagerEmail: '', managers: [], emailWarning: null,
     };
     this.bookingSvc = new VehicleBookingRequestService(props.context);
     this.historySvc = new VehicleBookingHistoryService(props.context);
     this.commentSvc = new VehicleBookingCommentService(props.context);
+    this.userSvc = new UserRoleService(props.context);
+    this.emailSvc = new EmailService(props.context);
   }
 
   public componentDidMount(): void {
@@ -163,10 +175,53 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
     }
   }
 
+  private async _openSubmitDialog(request: IVehicleBookingRequest): Promise<void> {
+    const managers = await this.userSvc.getManagersForDepartment(request.Department);
+    const all = managers.length > 0 ? managers : await this.userSvc.getAllManagers();
+    this.setState({ isSubmitDialogOpen: true, managers: all, submitManagerEmail: all[0]?.UserEmail || '' });
+  }
+
+  private async _doSubmit(): Promise<void> {
+    const { request, submitManagerEmail, managers } = this.state;
+    if (!request || !submitManagerEmail) return;
+    this.setState({ isActioning: true, isSubmitDialogOpen: false, error: null });
+    try {
+      await this.bookingSvc.submitRequest(request.ID, request, this._user(), submitManagerEmail);
+
+      // Gửi email — không block submit nếu lỗi, nhưng hiện cảnh báo
+      const manager = managers.find(m => m.UserEmail === submitManagerEmail);
+      try {
+        await this.emailSvc.sendApprovalRequest({
+          toEmail:       submitManagerEmail,
+          toName:        manager?.UserName || submitManagerEmail,
+          requestId:     request.ID,
+          requestCode:   request.RequestCode,
+          requestTitle:  request.Title || request.Purpose,
+          requesterName: request.RequesterName,
+          pageUrl:       window.location.href.split('?')[0],
+        });
+      } catch (emailErr) {
+        const msg = extractErrorMessage(emailErr);
+        console.error('[EmailService] Gửi email thất bại:', msg, emailErr);
+        this.setState({ emailWarning: `Yêu cầu đã gửi thành công, nhưng không gửi được email thông báo: ${msg}` });
+      }
+
+      this.setState({ isActioning: false });
+      await this._load();
+    } catch (err) {
+      this.setState({ error: extractErrorMessage(err), isActioning: false });
+    }
+  }
+
   private _renderActions(request: IVehicleBookingRequest): React.ReactNode {
     const { user } = this.props;
     const { isActioning } = this.state;
     const actions: React.ReactNode[] = [];
+
+    const isRequester = user.userEmail === request.RequesterEmail;
+
+    const canEdit   = isRequester && request.Status === STATUS.DRAFT;
+    const canSubmit = isRequester && request.Status === STATUS.DRAFT;
 
     const canApprove = user.role === ROLE.MANAGER && user.userEmail === request.CurrentApproverId &&
       (request.Status === STATUS.PENDING_MANAGER_APPROVAL || request.Status === STATUS.RESUBMITTED);
@@ -175,6 +230,24 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
       ([STATUS.DRAFT, STATUS.SUBMITTED, STATUS.PENDING_MANAGER_APPROVAL, STATUS.NEED_MORE_INFORMATION, STATUS.RESUBMITTED] as string[]).indexOf(request.Status) !== -1;
 
     const canResubmit = user.userEmail === request.RequesterEmail && request.Status === STATUS.NEED_MORE_INFORMATION;
+
+    if (canSubmit) {
+      actions.push(
+        <PrimaryButton key="submit" text="Gửi yêu cầu" disabled={isActioning}
+          iconProps={{ iconName: 'Send' }}
+          onClick={() => this._openSubmitDialog(request).catch(console.error)}
+          styles={{ root: { borderRadius: 8 } }} />
+      );
+    }
+
+    if (canEdit) {
+      actions.push(
+        <DefaultButton key="edit" text="Chỉnh sửa" disabled={isActioning}
+          iconProps={{ iconName: 'Edit' }}
+          onClick={() => this.props.onNavigate('create-request', { editId: request.ID })}
+          styles={{ root: { borderRadius: 8 } }} />
+      );
+    }
 
     if (canApprove) {
       actions.push(
@@ -219,11 +292,19 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
   }
 
   public render(): React.ReactElement {
-    const { request, history, comments, isLoading, error, confirmAction, actionNote, commentText, isActioning, isMobile } = this.state;
+    const { request, history, comments, isLoading, error, confirmAction, actionNote, commentText, isActioning, isMobile, emailWarning } = this.state;
 
     if (isLoading) return <Spinner size={SpinnerSize.large} label="Đang tải..." styles={{ root: { padding: '80px 0' } }} />;
     if (error) return <MessageBar messageBarType={MessageBarType.error}>{error}</MessageBar>;
     if (!request) return <MessageBar>Không tìm thấy yêu cầu</MessageBar>;
+
+    const emailWarningBar = emailWarning ? (
+      <MessageBar messageBarType={MessageBarType.warning}
+        onDismiss={() => this.setState({ emailWarning: null })}
+        styles={{ root: { marginBottom: 12, borderRadius: 8 } }}>
+        {emailWarning}
+      </MessageBar>
+    ) : null;
 
     const rightPanel = (
       <div>
@@ -271,6 +352,7 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
 
     return (
       <div>
+        {emailWarningBar}
         <PageHeader icon="DocumentSet" title={request.RequestCode} subtitle="Chi tiết yêu cầu đặt xe" />
 
         <div className={isMobile ? styles.layoutMobile : styles.layout}>
@@ -327,6 +409,26 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
           {/* Right panel — desktop only */}
           {!isMobile && rightPanel}
         </div>
+
+        <Dialog hidden={!this.state.isSubmitDialogOpen}
+          dialogContentProps={{ type: DialogType.normal, title: 'Gửi yêu cầu phê duyệt' }}
+          onDismiss={() => this.setState({ isSubmitDialogOpen: false })}>
+          <Dropdown
+            label="Người phê duyệt"
+            required
+            selectedKey={this.state.submitManagerEmail}
+            options={this.state.managers.map((m): IDropdownOption => ({
+              key: m.UserEmail, text: `${m.UserName} — ${m.Department || ''}`,
+            }))}
+            onChange={(_, o) => this.setState({ submitManagerEmail: String(o?.key || '') })}
+            styles={{ dropdown: { borderRadius: 8 } }}
+          />
+          <DialogFooter>
+            <PrimaryButton text="Gửi" disabled={!this.state.submitManagerEmail}
+              onClick={() => this._doSubmit().catch(console.error)} />
+            <DefaultButton text="Hủy" onClick={() => this.setState({ isSubmitDialogOpen: false })} />
+          </DialogFooter>
+        </Dialog>
 
         <Dialog hidden={!confirmAction}
           dialogContentProps={{

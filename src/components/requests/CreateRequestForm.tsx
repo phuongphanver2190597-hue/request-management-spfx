@@ -15,9 +15,10 @@ import { VEHICLE_TYPES } from '../../common/constants/statuses';
 import { ROLE } from '../../common/constants/roles';
 import { ICreateBookingRequest } from '../../models/VehicleBookingRequest';
 import { validateBookingRequest, getFieldError, IValidationError } from '../../common/helpers/validationHelper';
-import { fromInputDateTimeLocal } from '../../common/helpers/dateHelper';
+import { fromInputDateTimeLocal, toInputDateTimeLocal } from '../../common/helpers/dateHelper';
 import { extractErrorMessage } from '../../common/helpers/errorHelper';
 import { PageHeader } from '../shared/PageHeader';
+import { EmailService } from '../../services/emailService';
 
 const WHITE = '#FFFFFF';
 const BORDER = '#E1E4E8';
@@ -119,6 +120,7 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
   private bookingSvc: VehicleBookingRequestService;
   private locationSvc: LocationMasterService;
   private userSvc: UserRoleService;
+  private emailSvc: EmailService;
   private _mql: MediaQueryList | null = null;
 
   constructor(props: ICreateRequestFormProps) {
@@ -140,6 +142,7 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
     this.bookingSvc = new VehicleBookingRequestService(props.context);
     this.locationSvc = new LocationMasterService(props.context);
     this.userSvc = new UserRoleService(props.context);
+    this.emailSvc = new EmailService(props.context);
   }
 
   public componentDidMount(): void {
@@ -150,11 +153,40 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
     }
   }
 
+  public componentDidUpdate(prevProps: ICreateRequestFormProps): void {
+    if (this.props.editId && this.props.editId !== prevProps.editId) {
+      this._loadDraft(this.props.editId).catch(console.error);
+    }
+  }
+
   public componentWillUnmount(): void {
     if (this._mql) this._mql.removeListener(this._onMql);
   }
 
   private _onMql = (e: MediaQueryListEvent): void => { this.setState({ isMobile: e.matches }); }
+
+  private async _loadDraft(id: number): Promise<void> {
+    try {
+      const req = await this.bookingSvc.getById(id);
+      if (!req || req.Status !== 'DRAFT') return;
+      this.setState({
+        form: {
+          pickupLocation:       req.PickupLocation,
+          dropoffLocation:      req.DropoffLocation,
+          pickupDateTimeLocal:  toInputDateTimeLocal(req.PickupDateTime),
+          returnDateTimeLocal:  toInputDateTimeLocal(req.ReturnDateTime),
+          isRoundTrip:          req.IsRoundTrip,
+          numberOfPassengers:   req.NumberOfPassengers,
+          purpose:              req.Purpose,
+          vehicleType:          req.VehicleType,
+          specialRequirement:   req.SpecialRequirement || '',
+          phoneNumber:          req.PhoneNumber,
+          department:           req.Department,
+          selectedManagerEmail: req.CurrentApproverId || '',
+        },
+      });
+    } catch { /* giữ nguyên form nếu lỗi */ }
+  }
 
   private async _loadMeta(): Promise<void> {
     const { user } = this.props;
@@ -214,10 +246,14 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
   private async _saveDraft(): Promise<void> {
     this.setState({ isSaving: true, globalError: null, successMsg: null });
     try {
-      const { user } = this.props;
-      await this.bookingSvc.createDraft(this._buildPayload(), {
-        id: user.userId, name: user.userName, email: user.userEmail,
-      });
+      const { user, editId } = this.props;
+      if (editId) {
+        await this.bookingSvc.saveDraft(editId, this._buildPayload());
+      } else {
+        await this.bookingSvc.createDraft(this._buildPayload(), {
+          id: user.userId, name: user.userName, email: user.userEmail,
+        });
+      }
       this.setState({ isSaving: false, successMsg: 'Đã lưu nháp thành công!' });
     } catch (err) {
       this.setState({ isSaving: false, globalError: extractErrorMessage(err) });
@@ -243,6 +279,19 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
       await this.bookingSvc.submitRequest(created.ID, created, {
         id: user.userId, name: user.userName, email: user.userEmail,
       }, managerEmail || user.userEmail);
+
+      // Gửi email thông báo cho approver
+      const manager = this.state.allManagers.find(m => m.UserEmail === managerEmail);
+      this.emailSvc.sendApprovalRequest({
+        toEmail:       managerEmail || user.userEmail,
+        toName:        manager?.UserName || managerEmail,
+        requestId:     created.ID,
+        requestCode:   created.RequestCode,
+        requestTitle:  created.Purpose || created.Title,
+        requesterName: user.userName,
+        pageUrl:       window.location.href.split('?')[0],
+      }).catch(err => console.warn('[EmailService] Không gửi được email:', extractErrorMessage(err)));
+
       this.setState({ isSubmitting: false });
       this.props.onNavigate('my-requests');
     } catch (err) {

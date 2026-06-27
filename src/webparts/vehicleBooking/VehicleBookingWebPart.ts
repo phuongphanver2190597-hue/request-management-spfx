@@ -11,14 +11,15 @@ import VehicleBookingApp, { IVehicleBookingAppProps } from './components/Vehicle
 
 export interface IVehicleBookingWebPartProps {
   description: string;
+  apiBaseUrl: string;  // cấu hình per-tenant qua Property Pane
 }
 
 export default class VehicleBookingWebPart extends BaseClientSideWebPart<IVehicleBookingWebPartProps> {
 
   public render(): void {
-    const element: React.ReactElement<IVehicleBookingAppProps> = React.createElement(
+    const element = React.createElement(
       VehicleBookingApp,
-      { context: this.context }
+      { context: this.context, apiBaseUrl: this.properties.apiBaseUrl || '' }
     );
     ReactDom.render(element, this.domElement);
   }
@@ -42,6 +43,11 @@ export default class VehicleBookingWebPart extends BaseClientSideWebPart<IVehicl
               groupFields: [
                 PropertyPaneTextField('description', {
                   label: 'Description',
+                }),
+                PropertyPaneTextField('apiBaseUrl', {
+                  label: 'API Base URL',
+                  placeholder: 'https://api.yourcompany.com/api',
+                  description: 'Để trống nếu chỉ dùng SharePoint lists',
                 }),
               ],
             },

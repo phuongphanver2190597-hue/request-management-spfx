@@ -24,6 +24,7 @@ const DEV_MODE = true;
 
 export interface IVehicleBookingAppProps {
   context: WebPartContext;
+  apiBaseUrl?: string;
 }
 
 interface IVehicleBookingAppState {
@@ -59,13 +60,27 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
     this._loadUser().catch(console.error);
   }
 
+  private _getDeepLinkScreen(): { screen: AppScreen; params: unknown } | null {
+    const params = new URLSearchParams(window.location.search);
+    const requestId = params.get('requestId');
+    if (requestId && !isNaN(Number(requestId))) {
+      return { screen: 'request-detail', params: { id: Number(requestId) } };
+    }
+    return null;
+  }
+
   private async _loadUser(): Promise<void> {
     try {
       const [user, allUsers] = await Promise.all([
         this.userSvc.getCurrentUserRole(this.props.context),
         DEV_MODE ? this.userSvc.getAllIncludingInactive() : Promise.resolve([]),
       ]);
-      this.setState({ user, realUser: user, allUsers, isLoading: false });
+      const deepLink = this._getDeepLinkScreen();
+      this.setState({
+        user, realUser: user, allUsers, isLoading: false,
+        currentScreen: deepLink ? deepLink.screen : 'dashboard',
+        screenParams:  deepLink ? deepLink.params  : null,
+      });
     } catch (err) {
       this.setState({ error: extractErrorMessage(err), isLoading: false });
     }
@@ -107,7 +122,9 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
       case 'my-requests':
         return <MyRequests context={context} user={user} onNavigate={this._navigate} />;
       case 'create-request':
-        return <CreateRequestForm context={context} user={user} onNavigate={this._navigate} />;
+        return <CreateRequestForm context={context} user={user}
+          editId={params?.editId as number | undefined}
+          onNavigate={this._navigate} />;
       case 'request-detail':
         return <RequestDetail context={context} user={user}
           requestId={params?.id as number || 0} onNavigate={this._navigate} />;

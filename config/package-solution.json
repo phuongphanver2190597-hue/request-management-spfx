@@ -7,6 +7,9 @@
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,
+    "webApiPermissionRequests": [
+      { "resource": "Microsoft Graph", "scope": "Mail.Send" }
+    ],
     "developer": {
       "name": "",
       "privacyUrl": "",
