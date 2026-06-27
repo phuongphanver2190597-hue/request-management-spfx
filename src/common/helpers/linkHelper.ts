@@ -1,10 +1,10 @@
 /**
  * Build deep link URL trỏ thẳng tới một request cụ thể.
- * pageUrl: full URL của SharePoint page chứa web part
- *   ví dụ: https://tenant.sharepoint.com/sites/xxx/SitePages/VehicleBooking.aspx
+ * Tự lấy page URL hiện tại, chỉ cần truyền requestId.
  */
-export function buildApprovalLink(pageUrl: string, requestId: number): string {
-  const url = new URL(pageUrl);
+export function buildApprovalLink(requestId: number): string {
+  const base = window.location.origin + window.location.pathname;
+  const url = new URL(base);
   url.searchParams.set('requestId', String(requestId));
   return url.toString();
 }

@@ -9,7 +9,6 @@ interface ISendApprovalEmailParams {
   requestCode:  string;
   requestTitle: string;
   requesterName: string;
-  pageUrl:      string;
 }
 
 export class EmailService {
@@ -20,7 +19,7 @@ export class EmailService {
   }
 
   async sendApprovalRequest(params: ISendApprovalEmailParams): Promise<void> {
-    const link = buildApprovalLink(params.pageUrl, params.requestId);
+    const link = buildApprovalLink(params.requestId);
     const siteUrl = this.context.pageContext.web.absoluteUrl;
 
     const body = `<div style="font-family:Segoe UI,sans-serif;max-width:600px">

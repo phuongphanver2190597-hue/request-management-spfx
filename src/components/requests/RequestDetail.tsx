@@ -20,6 +20,7 @@ import { StatusBadge } from '../shared/StatusBadge';
 import { PageHeader } from '../shared/PageHeader';
 import { formatDateTime, nowISO } from '../../common/helpers/dateHelper';
 import { extractErrorMessage } from '../../common/helpers/errorHelper';
+import { buildApprovalLink } from '../../common/helpers/linkHelper';
 
 const WHITE = '#FFFFFF';
 const BORDER = '#E1E4E8';
@@ -182,7 +183,8 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
     if (!request || !submitManagerEmail) return;
     this.setState({ isActioning: true, isSubmitDialogOpen: false, error: null });
     try {
-      await this.bookingSvc.submitRequest(request.ID, request, this._user(), submitManagerEmail);
+      const approvalLink = buildApprovalLink(request.ID);
+      await this.bookingSvc.submitRequest(request.ID, request, this._user(), submitManagerEmail, approvalLink);
       this.setState({ isActioning: false });
       await this._load();
     } catch (err) {

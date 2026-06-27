@@ -29,6 +29,7 @@ export interface IVehicleBookingRequest {
   StartOdometer: number;
   EndOdometer: number;
   TotalDistance: number;
+  ApprovalLink?: string;
   CancelReason: string;
   AdminNote: string;
   SubmittedDate: string;

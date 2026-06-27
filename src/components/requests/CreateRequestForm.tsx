@@ -17,6 +17,7 @@ import { ICreateBookingRequest } from '../../models/VehicleBookingRequest';
 import { validateBookingRequest, getFieldError, IValidationError } from '../../common/helpers/validationHelper';
 import { fromInputDateTimeLocal, toInputDateTimeLocal } from '../../common/helpers/dateHelper';
 import { extractErrorMessage } from '../../common/helpers/errorHelper';
+import { buildApprovalLink } from '../../common/helpers/linkHelper';
 import { PageHeader } from '../shared/PageHeader';
 
 const WHITE = '#FFFFFF';
@@ -273,9 +274,10 @@ export default class CreateRequestForm extends React.Component<ICreateRequestFor
       const created = await this.bookingSvc.createDraft(this._buildPayload(), {
         id: user.userId, name: user.userName, email: user.userEmail,
       });
+      const approvalLink = buildApprovalLink(created.ID);
       await this.bookingSvc.submitRequest(created.ID, created, {
         id: user.userId, name: user.userName, email: user.userEmail,
-      }, managerEmail || user.userEmail);
+      }, managerEmail || user.userEmail, approvalLink);
 
       this.setState({ isSubmitting: false });
       this.props.onNavigate('my-requests');

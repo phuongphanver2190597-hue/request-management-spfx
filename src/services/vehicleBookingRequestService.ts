@@ -178,13 +178,20 @@ export class VehicleBookingRequestService extends SpService {
     return result;
   }
 
-  async submitRequest(id: number, request: IVehicleBookingRequest, user: { id: string; name: string; email: string }, managerEmail: string): Promise<void> {
+  async submitRequest(
+    id: number,
+    request: IVehicleBookingRequest,
+    user: { id: string; name: string; email: string },
+    managerEmail: string,
+    approvalLink?: string,
+  ): Promise<void> {
     const oldStatus = request.Status;
     const newStatus = STATUS.PENDING_MANAGER_APPROVAL;
     await this.updateItem(LIST_NAMES.VEHICLE_BOOKING_REQUEST, id, {
       Status:            newStatus,
       CurrentApproverId: managerEmail,
       SubmittedDate:     nowISO(),
+      ...(approvalLink ? { ApprovalLink: approvalLink } : {}),
     });
     await this.historyService.log(id, request.RequestCode, ACTION.SUBMIT, oldStatus, newStatus, user, '');
   }
