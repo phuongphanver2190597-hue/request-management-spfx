@@ -84,6 +84,7 @@ interface IRequestDetailState {
   isSubmitDialogOpen: boolean;
   submitManagerEmail: string;
   managers: IUserRole[];
+  linkCopied: boolean;
 }
 
 export default class RequestDetail extends React.Component<IRequestDetailProps, IRequestDetailState> {
@@ -100,7 +101,7 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
       isLoading: false, error: null,
       actionNote: '', commentText: '', isActioning: false, confirmAction: null,
       isMobile: typeof window !== 'undefined' && window.innerWidth <= 768,
-      isSubmitDialogOpen: false, submitManagerEmail: '', managers: [],
+      isSubmitDialogOpen: false, submitManagerEmail: '', managers: [], linkCopied: false,
     };
     this.bookingSvc = new VehicleBookingRequestService(props.context);
     this.historySvc = new VehicleBookingHistoryService(props.context);
@@ -258,7 +259,35 @@ export default class RequestDetail extends React.Component<IRequestDetailProps, 
       );
     }
 
-    return actions.length > 0 ? <div className={styles.actionBar}>{actions}</div> : null;
+    const { linkCopied } = this.state;
+    actions.push(
+      <DefaultButton key="copy-link"
+        text={linkCopied ? 'Đã sao chép!' : 'Sao chép link'}
+        iconProps={{ iconName: linkCopied ? 'CheckMark' : 'Link' }}
+        disabled={isActioning}
+        onClick={() => this._copyLink(request)}
+        styles={{ root: { borderRadius: 8, marginLeft: 'auto' } }} />
+    );
+
+    return <div className={styles.actionBar}>{actions}</div>;
+  }
+
+  private _copyLink(request: IVehicleBookingRequest): void {
+    const link = buildApprovalLink(request.ID);
+    navigator.clipboard.writeText(link).then(() => {
+      this.setState({ linkCopied: true });
+      setTimeout(() => this.setState({ linkCopied: false }), 2500);
+    }).catch(() => {
+      // fallback cho browser cũ
+      const el = document.createElement('textarea');
+      el.value = link;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      this.setState({ linkCopied: true });
+      setTimeout(() => this.setState({ linkCopied: false }), 2500);
+    });
   }
 
   private _field(label: string, value: React.ReactNode): React.ReactNode {
