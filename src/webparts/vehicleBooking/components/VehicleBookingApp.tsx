@@ -247,7 +247,10 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
           <ChatBot
             apiKey={claudeApiKey}
             userName={user.userName}
+            userEmail={user.userEmail}
             userRole={user.role}
+            context={this.props.context}
+            onNavigate={this._navigate}
           />
         )}
       </div>
