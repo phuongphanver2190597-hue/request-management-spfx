@@ -1,0 +1,61 @@
+{
+  "id": "e2a4c6f8-1b3d-4e7a-9c5f-2d8b0e6a4c2f",
+  "alias": "ChatBotApplicationCustomizer",
+  "componentType": "Extension",
+  "extensionType": "ApplicationCustomizer",
+  "version": "0.0.1",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "safeWithCustomScriptDisabled": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119a-3b0a-4e4e-b8d1-c5f001a40fe0",
+      "group": {
+        "default": "Custom"
+      },
+      "title": {
+        "default": "AI Chatbot"
+      },
+      "description": {
+        "default": "Global AI Chatbot powered by Claude/GPT"
+      },
+      "officeFabricIconFontName": "Robot",
+      "properties": {
+        "claudeApiKey": "",
+        "bookingPageUrl": ""
+      }
+    }
+  ],
+  "loaderConfig": {
+    "internalModuleBaseUrls": [
+      "<!-- PATH TO CDN -->"
+    ],
+    "entryModuleId": "chat-bot-application-customizer",
+    "scriptResources": {
+      "chat-bot-application-customizer": {
+        "type": "path",
+        "path": "chat-bot-application-customizer_92dff8311a7c24b8b560.js"
+      },
+      "@microsoft/sp-application-base": {
+        "type": "component",
+        "id": "4df9bb86-ab0a-4aab-ab5f-48bf167048fb",
+        "version": "1.23.1"
+      },
+      "react": {
+        "type": "component",
+        "id": "0d910c1c-13b9-4e1c-9aa4-b008c5e42d7d",
+        "version": "17.0.1"
+      },
+      "react-dom": {
+        "type": "component",
+        "id": "aa0a46ec-1505-43cd-a44a-93f3a5aa460a",
+        "version": "17.0.1"
+      },
+      "@microsoft/sp-http": {
+        "type": "component",
+        "id": "c07208f0-ea3b-4c1a-9965-ac1b825211a6",
+        "version": "1.23.1"
+      }
+    }
+  }
+}

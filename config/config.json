@@ -17,6 +17,14 @@
           "manifest": "./src/webparts/vehicleBooking/VehicleBookingWebPart.manifest.json"
         }
       ]
+    },
+    "chat-bot-application-customizer": {
+      "components": [
+        {
+          "entrypoint": "./lib/extensions/chatBot/ChatBotApplicationCustomizer.js",
+          "manifest": "./src/extensions/chatBot/ChatBotApplicationCustomizer.manifest.json"
+        }
+      ]
     }
   },
   "externals": {}
