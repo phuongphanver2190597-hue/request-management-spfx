@@ -249,6 +249,7 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
             userName={user.userName}
             userEmail={user.userEmail}
             userRole={user.role}
+            userDepartment={user.department || ''}
             context={this.props.context}
             onNavigate={this._navigate}
           />

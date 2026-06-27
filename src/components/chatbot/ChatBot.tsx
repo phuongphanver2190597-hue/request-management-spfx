@@ -31,12 +31,13 @@ type OAIToolCall = { id: string; type: 'function'; function: { name: string; arg
 // ─── Props / State ────────────────────────────────────────────────────────────
 
 export interface IChatBotProps {
-  apiKey:     string;
-  userName:   string;
-  userEmail:  string;
-  userRole:   string;
-  context:    WebPartContext;
-  onNavigate: (screen: AppScreen, params?: unknown) => void;
+  apiKey:          string;
+  userName:        string;
+  userEmail:       string;
+  userRole:        string;
+  userDepartment:  string;
+  context:         WebPartContext;
+  onNavigate:      (screen: AppScreen, params?: unknown) => void;
 }
 
 interface IChatBotState {
@@ -55,8 +56,15 @@ const BORDER  = '#E1E4E8';
 const MUTED   = '#6A737D';
 
 const SYSTEM_PROMPT = `Bạn là trợ lý ảo của hệ thống đặt xe nội bộ công ty.
-Bạn CÓ THỂ tra cứu dữ liệu thực tế và điều hướng app bằng các công cụ được cung cấp.
+Bạn CÓ THỂ tra cứu dữ liệu thực tế, tạo yêu cầu đặt xe và điều hướng app bằng các công cụ được cung cấp.
 Trả lời ngắn gọn, thân thiện, bằng tiếng Việt.
+
+Khi người dùng muốn TẠO yêu cầu đặt xe:
+- Hỏi lần lượt: điểm đón, điểm đến, thời gian đón (ngày giờ cụ thể), mục đích chuyến đi, số hành khách.
+- Hỏi thêm: có về không (khứ hồi)? nếu có thì thời gian về?
+- Sau khi có đủ thông tin, gọi tool create_booking_request.
+- pickup_datetime phải ở dạng ISO: "2026-06-28T08:00:00"
+
 Khi người dùng hỏi về yêu cầu của họ, hãy dùng tool get_my_requests.
 Khi người dùng muốn xem chi tiết một ticket, hãy dùng tool navigate_to_request.`;
 
@@ -94,6 +102,26 @@ const TOOLS_SCHEMA = [
       required: ['request_id'],
     },
   },
+  {
+    name: 'create_booking_request',
+    description: 'Tạo yêu cầu đặt xe mới dưới dạng bản nháp (Draft). Gọi khi đã có đủ thông tin từ người dùng.',
+    parameters: {
+      type: 'object',
+      properties: {
+        pickup_location:     { type: 'string',  description: 'Điểm đón' },
+        dropoff_location:    { type: 'string',  description: 'Điểm đến' },
+        pickup_datetime:     { type: 'string',  description: 'Thời gian đón, ISO format: 2026-06-28T08:00:00' },
+        purpose:             { type: 'string',  description: 'Mục đích chuyến đi' },
+        number_of_passengers:{ type: 'number',  description: 'Số hành khách' },
+        is_round_trip:       { type: 'boolean', description: 'Có khứ hồi không' },
+        return_datetime:     { type: 'string',  description: 'Thời gian về (nếu khứ hồi), ISO format' },
+        vehicle_type:        { type: 'string',  description: 'Loại xe: Sedan, SUV, Van, Bus (mặc định Sedan)' },
+        special_requirement: { type: 'string',  description: 'Yêu cầu đặc biệt nếu có' },
+        phone_number:        { type: 'string',  description: 'Số điện thoại liên hệ' },
+      },
+      required: ['pickup_location', 'dropoff_location', 'pickup_datetime', 'purpose', 'number_of_passengers'],
+    },
+  },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -107,7 +135,7 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
     this.bookingSvc = new VehicleBookingRequestService(props.context);
     this.state = {
       open: false,
-      messages: [{ role: 'assistant', content: `Xin chào ${props.userName}! Tôi có thể tra cứu yêu cầu đặt xe, xem trạng thái và mở ticket cho bạn. Bạn cần hỗ trợ gì?` }],
+      messages: [{ role: 'assistant', content: `Xin chào ${props.userName}! Tôi có thể tra cứu, **tạo mới** yêu cầu đặt xe và mở ticket cho bạn. Bạn cần hỗ trợ gì?` }],
       input: '', loading: false, error: null,
     };
   }
@@ -120,7 +148,7 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
   // ─── Tool execution ──────────────────────────────────────────────────────────
 
   private async _executeTool(name: string, args: Record<string, unknown>): Promise<string> {
-    const { userEmail, onNavigate } = this.props;
+    const { userEmail, userName, userDepartment, onNavigate } = this.props;
     try {
       if (name === 'get_my_requests') {
         const all = await this.bookingSvc.getMyRequests(userEmail);
@@ -144,6 +172,27 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
         const id = Number(args.request_id);
         onNavigate('request-detail', { id });
         return `Đã mở ticket ID ${id}.`;
+      }
+
+      if (name === 'create_booking_request') {
+        const created = await this.bookingSvc.createDraft(
+          {
+            pickupLocation:      String(args.pickup_location || ''),
+            dropoffLocation:     String(args.dropoff_location || ''),
+            pickupDateTime:      String(args.pickup_datetime || ''),
+            returnDateTime:      String(args.return_datetime || ''),
+            isRoundTrip:         Boolean(args.is_round_trip),
+            numberOfPassengers:  Number(args.number_of_passengers || 1),
+            purpose:             String(args.purpose || ''),
+            vehicleType:         String(args.vehicle_type || 'Sedan'),
+            specialRequirement:  String(args.special_requirement || ''),
+            phoneNumber:         String(args.phone_number || ''),
+            department:          userDepartment,
+          },
+          { id: userEmail, name: userName, email: userEmail }
+        );
+        onNavigate('request-detail', { id: created.ID });
+        return `Đã tạo yêu cầu **${created.RequestCode}** thành công (trạng thái: Nháp).\nĐang mở chi tiết để bạn kiểm tra và gửi phê duyệt.`;
       }
 
       return 'Tool không xác định.';
@@ -347,7 +396,7 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
             {/* Quick prompts */}
             {messages.length === 1 && (
               <div style={{ padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-                {['Yêu cầu của tôi', 'Yêu cầu đang chờ duyệt', 'Hướng dẫn đặt xe'].map(q => (
+                {['Tạo yêu cầu mới', 'Yêu cầu của tôi', 'Yêu cầu chờ duyệt'].map(q => (
                   <button key={q} onClick={() => this.setState({ input: q }, () => this._send().catch(console.error))}
                     style={{ fontSize: 11, padding: '4px 10px', borderRadius: 12, border: `1px solid ${PRIMARY}`, background: '#fff', color: PRIMARY, cursor: 'pointer' }}>
                     {q}
