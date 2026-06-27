@@ -65,7 +65,9 @@ Khi người dùng muốn TẠO yêu cầu đặt xe:
 - Sau khi có đủ thông tin, gọi tool create_booking_request.
 - pickup_datetime phải ở dạng ISO: "2026-06-28T08:00:00"
 
-Khi người dùng hỏi về yêu cầu của họ, hãy dùng tool get_my_requests.
+QUAN TRỌNG - phân biệt rõ 2 loại:
+- "yêu cầu của tôi" / "tôi đã tạo" → dùng get_my_requests (yêu cầu DO TÔI TẠO)
+- "chờ tôi duyệt" / "cần tôi phê duyệt" / "chờ phê duyệt" → dùng get_pending_approvals (yêu cầu của NGƯỜI KHÁC gửi lên cho tôi duyệt)
 Khi người dùng muốn xem chi tiết một ticket, hãy dùng tool navigate_to_request.`;
 
 // Tool definitions — dùng chung cho cả Claude và OpenAI
@@ -101,6 +103,11 @@ const TOOLS_SCHEMA = [
       },
       required: ['request_id'],
     },
+  },
+  {
+    name: 'get_pending_approvals',
+    description: 'Lấy danh sách yêu cầu đang chờ NGƯỜI DÙNG HIỆN TẠI phê duyệt (với tư cách trưởng phòng/manager). Khác với get_my_requests — đây là yêu cầu của người KHÁC gửi lên cho mình duyệt.',
+    parameters: { type: 'object', properties: {} },
   },
   {
     name: 'create_booking_request',
@@ -166,6 +173,14 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
         const r = all.find(x => x.RequestCode?.toLowerCase() === String(args.code).toLowerCase());
         if (!r) return `Không tìm thấy yêu cầu ${args.code}.`;
         return `Mã: ${r.RequestCode}\nTrạng thái: ${r.Status}\nĐiểm đón: ${r.PickupLocation}\nĐiểm đến: ${r.DropoffLocation}\nThời gian: ${r.PickupDateTime}\nMục đích: ${r.Purpose}\nID: ${r.ID}`;
+      }
+
+      if (name === 'get_pending_approvals') {
+        const list = await this.bookingSvc.getPendingApproval(userEmail);
+        if (!list.length) return 'Không có yêu cầu nào đang chờ bạn phê duyệt.';
+        return `Có ${list.length} yêu cầu chờ bạn phê duyệt:\n` + list.map(r =>
+          `- ${r.RequestCode} | ${r.RequesterName} | ${r.PickupLocation} → ${r.DropoffLocation} | ${r.PickupDateTime?.slice(0, 10) || 'N/A'} | ID:${r.ID}`
+        ).join('\n');
       }
 
       if (name === 'navigate_to_request') {
@@ -396,7 +411,7 @@ export default class ChatBot extends React.Component<IChatBotProps, IChatBotStat
             {/* Quick prompts */}
             {messages.length === 1 && (
               <div style={{ padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-                {['Tạo yêu cầu mới', 'Yêu cầu của tôi', 'Yêu cầu chờ duyệt'].map(q => (
+                {['Tạo yêu cầu mới', 'Yêu cầu của tôi', 'Chờ tôi phê duyệt'].map(q => (
                   <button key={q} onClick={() => this.setState({ input: q }, () => this._send().catch(console.error))}
                     style={{ fontSize: 11, padding: '4px 10px', borderRadius: 12, border: `1px solid ${PRIMARY}`, background: '#fff', color: PRIMARY, cursor: 'pointer' }}>
                     {q}
