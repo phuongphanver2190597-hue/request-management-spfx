@@ -11,7 +11,8 @@ import VehicleBookingApp, { IVehicleBookingAppProps } from './components/Vehicle
 
 export interface IVehicleBookingWebPartProps {
   description: string;
-  apiBaseUrl: string;  // cấu hình per-tenant qua Property Pane
+  apiBaseUrl: string;
+  claudeApiKey: string;
 }
 
 export default class VehicleBookingWebPart extends BaseClientSideWebPart<IVehicleBookingWebPartProps> {
@@ -19,7 +20,11 @@ export default class VehicleBookingWebPart extends BaseClientSideWebPart<IVehicl
   public render(): void {
     const element = React.createElement(
       VehicleBookingApp,
-      { context: this.context, apiBaseUrl: this.properties.apiBaseUrl || '' }
+      {
+        context: this.context,
+        apiBaseUrl: this.properties.apiBaseUrl || '',
+        claudeApiKey: this.properties.claudeApiKey || '',
+      }
     );
     ReactDom.render(element, this.domElement);
   }
@@ -48,6 +53,16 @@ export default class VehicleBookingWebPart extends BaseClientSideWebPart<IVehicl
                   label: 'API Base URL',
                   placeholder: 'https://api.yourcompany.com/api',
                   description: 'Để trống nếu chỉ dùng SharePoint lists',
+                }),
+              ],
+            },
+            {
+              groupName: 'Chatbot (Claude AI)',
+              groupFields: [
+                PropertyPaneTextField('claudeApiKey', {
+                  label: 'Claude API Key',
+                  placeholder: 'sk-ant-...',
+                  description: 'Lấy tại console.anthropic.com — để trống để tắt chatbot',
                 }),
               ],
             },

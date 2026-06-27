@@ -18,6 +18,7 @@ import { IUserRole } from '../../../models/UserRole';
 import { IAppUser, AppScreen } from '../../../common/types/common';
 import { ROLE } from '../../../common/constants/roles';
 import { extractErrorMessage } from '../../../common/helpers/errorHelper';
+import ChatBot from '../../../components/chatbot/ChatBot';
 
 // Bật DEV_MODE để hiện switcher giả lập user — tắt trước khi release
 const DEV_MODE = true;
@@ -25,6 +26,7 @@ const DEV_MODE = true;
 export interface IVehicleBookingAppProps {
   context: WebPartContext;
   apiBaseUrl?: string;
+  claudeApiKey?: string;
 }
 
 interface IVehicleBookingAppState {
@@ -226,6 +228,8 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
 
     if (!user) return null;
 
+    const { claudeApiKey } = this.props;
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         {this._renderDevSwitcher()}
@@ -239,6 +243,13 @@ export default class VehicleBookingApp extends React.Component<IVehicleBookingAp
             {this._renderScreen()}
           </AppLayout>
         </div>
+        {claudeApiKey && (
+          <ChatBot
+            apiKey={claudeApiKey}
+            userName={user.userName}
+            userRole={user.role}
+          />
+        )}
       </div>
     );
   }
